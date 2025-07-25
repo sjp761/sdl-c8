@@ -15,7 +15,6 @@ struct SDL_Deleter<SDL_Texture> {
     void operator()(SDL_Texture* ptr) const {
         if (ptr) {
             SDL_DestroyTexture(ptr);
-            std::cout << "SDL_Texture deleted" << std::endl;
         }
     }
 };
@@ -25,7 +24,6 @@ struct SDL_Deleter<SDL_Surface> {
     void operator()(SDL_Surface* ptr) const {
         if (ptr) {
             SDL_FreeSurface(ptr);
-            std::cout << "SDL_Surface deleted" << std::endl;
         }
     }
 };
@@ -41,5 +39,14 @@ public:
     SDL_SmartPointer& operator=(const SDL_SmartPointer&) = delete;
     SDL_SmartPointer(SDL_SmartPointer&&) noexcept = default;
     SDL_SmartPointer& operator=(SDL_SmartPointer&&) noexcept = default;
+
+    T* get() const { return ptr_.get(); }
+    T* operator->() const { return ptr_.get(); }
+    T& operator*() const { return *ptr_; }
+    explicit operator bool() const { return static_cast<bool>(ptr_); } //Allows checking if the internal pointer is valid
+    void reset(T* rawPtr = nullptr) { ptr_.reset(rawPtr); }
+
     std::unique_ptr<T, SDL_Deleter<T>> ptr_;
 };
+
+using SDL_SmartTexture = SDL_SmartPointer<SDL_Texture>;

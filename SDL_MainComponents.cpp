@@ -1,10 +1,11 @@
 #include "SDL_MainComponents.h"
 #include <tuple>
+SDL_SmartPointer<SDL_Texture> SDL_MainComponents::display;
 
 namespace
 {
-    constexpr int WINDOW_WIDTH = 32;
-    constexpr int WINDOW_HEIGHT = 24; 
+    constexpr int WINDOW_WIDTH = 64;
+    constexpr int WINDOW_HEIGHT = 32;
     constexpr uint32_t DEFAULT_COLOR = 0xFFFF00FF; // Yellow in RGBA format
     constexpr int SCALE_FACTOR = 20;
 }
@@ -12,7 +13,7 @@ namespace
 void SDL_MainComponents::renderUpdate()
 {
     SDL_RenderClear(renderer);
-    //SDL_RenderCopy(renderer, texture, nullptr, nullptr);
+    SDL_RenderCopy(renderer, display.get(), nullptr, nullptr);
     SDL_RenderPresent(renderer);
 }
 
@@ -33,12 +34,15 @@ std::tuple<uint8_t, uint8_t, uint8_t, uint8_t> SDL_MainComponents::extractRGBA()
     return std::make_tuple(r, g, b, a);
 }
 
-void SDL_MainComponents::handleEvent(SDL_Event &event, Chip8 &c8machine)
+void SDL_MainComponents::handleEvent(Chip8 &c8machine)
 {
-    switch (event.type)
+    SDL_Event event;
+    while (SDL_PollEvent(&event))
     {
-        case SDL_QUIT:
-            c8machine.state = Chip8::STOPPED;
+        switch (event.type)
+        {
+            case SDL_QUIT:
+                c8machine.state = Chip8::STOPPED;
             break;
         case SDL_KEYDOWN:
             switch (event.key.keysym.sym)
@@ -59,4 +63,5 @@ void SDL_MainComponents::handleEvent(SDL_Event &event, Chip8 &c8machine)
             }
             break;
         }
+    }
 }

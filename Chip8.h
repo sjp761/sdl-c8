@@ -2,7 +2,8 @@
 #include <cstdint>
 #include <fstream>
 #include <cstring>
-
+#include <vector>
+#include <SDL2/SDL_render.h>
 
 struct instruction_t
 {
@@ -32,7 +33,7 @@ class Chip8
     public:
         uint8_t memory[4096]; // 4KB of memory
         bool display[64 * 32]; // Chip8 has a 64x32 pixel monochrome display, bool because on or off
-        uint16_t stack[16]; // Chip8 has a 16-level stack
+        std::vector<uint16_t> stack; // Chip8 stack using vector
         uint8_t V[16]; // 16 registers (V0 to VF)
         uint16_t I; // Index register
         uint8_t delayTimer; // Delay timer
@@ -42,6 +43,7 @@ class Chip8
 
         void emulateInstruction();
         void loadRom(const std::string& romPath);
+        SDL_Texture* getDisplayTexture() const;
         enum emulationState { RUNNING, PAUSED, STOPPED };
         emulationState state;
         instruction_t currentInstruction;
@@ -71,8 +73,9 @@ class Chip8
 
         Chip8(const std::string& romPath) : state(RUNNING), currentRom(romPath)
         {
+            memset(display, 0, sizeof(display));
             currentRom = romPath;
-            //loadRom(romPath);
+            loadRom(romPath);
             pc = 0x200; // Program starts at 0x200
             memcpy(memory + 0x50, font, sizeof(font)); // Load font into memory starting at 0x50
         }

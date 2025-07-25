@@ -1,0 +1,1 @@
+Taking a shot at a Chip 8 Emulator written in C++ and SDL. Let's see how this goes

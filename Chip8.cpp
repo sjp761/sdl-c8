@@ -17,8 +17,17 @@ void Chip8::emulateInstruction()
                     memset(display, false, sizeof(display));
                     break;
                 case 0x00EE: // Return from subroutine
-                    pc = stack.back();
-                    stack.pop_back();
+                    if (!stack.empty()) 
+                    {
+                        uint16_t returnAddress = stack.back();
+                        stack.pop_back();
+                        pc = returnAddress; // Set PC to the address popped from the stack
+                    } 
+                    else 
+                    {
+                        std::cerr << "Stack underflow on 00EE (return from subroutine)" << std::endl;
+                        // Optionally, set state = STOPPED or handle as needed
+                    }
                     break;
             }
             break;
@@ -50,9 +59,6 @@ void Chip8::emulateInstruction()
                 pc += 2;
             }
             break;
-        case 0x0A:
-            I = currentInstruction.nnn; // Set index register I to nnn
-            break;
         case 0x06:
             // Load register Vx with nn
             V[currentInstruction.x] = currentInstruction.nn;
@@ -61,14 +67,95 @@ void Chip8::emulateInstruction()
             // Add nn to register Vx
             V[currentInstruction.x] += currentInstruction.nn;
             break;
+        case 0x08:
+            switch (currentInstruction.n)
+            {
+                case 0x0:
+                    // Load Vx with Vy
+                    V[currentInstruction.x] = V[currentInstruction.y];
+                    break;
+                case 0x1:
+                    // Set Vx to Vx OR Vy
+                    V[currentInstruction.x] |= V[currentInstruction.y];
+                    break;
+                case 0x2:
+                    // Set Vx to Vx AND Vy
+                    V[currentInstruction.x] &= V[currentInstruction.y];
+                    break;
+                case 0x3:
+                    // Set Vx to Vx XOR Vy
+                    V[currentInstruction.x] ^= V[currentInstruction.y];
+                    break;
+                case 0x4:
+                    if ((V[currentInstruction.x] + V[currentInstruction.y]) > 255)
+                    {
+                        V[15] = 1;
+                    }
+                    else
+                    {
+                        V[15] = 0;
+                    }
+                    V[currentInstruction.x] = V[currentInstruction.x] + V[currentInstruction.y];
+                    break;
+                case 0x5:
+                    // Subtract Vy from Vx
+                    if (V[currentInstruction.x] > V[currentInstruction.y]) 
+                    {
+                        V[15] = 1; // Set VF to 1 if no borrow
+                    }
+                    else
+                    {
+                        V[15] = 0; // Set VF to 0 if borrow occurs
+                    }
+                    V[currentInstruction.x] -= V[currentInstruction.y];
+                    break;
+                case 0x06:
+                    // Shift Vx right by 1
+                    V[15] = V[currentInstruction.x] & 0x01; // Set VF to the least significant bit before shifting
+                    V[currentInstruction.x] >>= 1;
+                    break;
+                case 0x07:
+                    // Set Vx to Vy - Vx
+                    if (V[currentInstruction.y] > V[currentInstruction.x]) {
+                        V[15] = 0; // Set VF to 0 if borrow occurs
+                    } else {
+                        V[15] = 1; // Set VF to 1 if no borrow
+                    }
+                    V[currentInstruction.x] = V[currentInstruction.y] - V[currentInstruction.x];
+                    break;
+                case 0xE:
+                    // Shift Vx left by 1
+                    V[15] = (V[currentInstruction.x] & 0x80) >> 7; // Set VF to the most significant bit before shifting
+                    V[currentInstruction.x] <<= 1;
+                    break;
+                default:
+                    //Handle unknown opcodes
+                    std::cerr << "Unknown opcode: " << std::hex << currentInstruction.opcode << std::dec << std::endl;
+                    break;
+
+            }
+            break;
+        case 0x09:
+            if (V[currentInstruction.x] != V[currentInstruction.y]) // Skip next instruction if Vx != Vy
+            {
+                pc += 2;
+            }
+            break;
+        case 0x0A:
+            I = currentInstruction.nnn; // Set index register I to nnn
+            break;
+        case 0x0B:
+            // Jump to address nnn + V0
+            pc = currentInstruction.nnn + V[0];
+            break;
         case 0x0D:
         {
             updatec8display(); // Update the display with the sprite data
             break;
         }
         default:
-            // Handle unknown opcodes
-            //std::cerr << "Unknown opcode: " << std::hex << currentInstruction.opcode << std::dec << std::endl;
+            //Handle unknown opcodes
+            std::cerr << "Unknown opcode: " << std::hex << currentInstruction.opcode << std::dec << std::endl;
             break;
     }
 }

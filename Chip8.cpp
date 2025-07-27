@@ -5,7 +5,7 @@
 void Chip8::emulateInstruction()
 {
     currentInstruction = instruction_t(memory[pc] << 8 | memory[pc + 1]); //Combines two bytes into one instruction (16-bit opcode)
-    pc += 2; // Move to the next instruction
+    pc += 2; // Move to the next instruction, +2 because each instruction is 2 bytes long
 
     switch ((currentInstruction.opcode >> 12) & 0xF)
     {
@@ -31,6 +31,25 @@ void Chip8::emulateInstruction()
             stack.push_back(pc); // Push current PC onto stack
             pc = currentInstruction.nnn; // Set PC to nnn
             break;
+        
+        case 0x03:
+            if (V[currentInstruction.x] == currentInstruction.nn) // Skip next instruction if Vx == nn
+            {
+                pc += 2; //Incrementing PC by 2 skips the next instruction
+            }
+            break;
+        case 0x04:
+            if (V[currentInstruction.x] != currentInstruction.nn) // Skip next instruction if Vx != nn
+            {
+                pc += 2;
+            }
+            break;
+        case 0x05:
+            if (V[currentInstruction.x] == V[currentInstruction.y]) // Skip next instruction if Vx == Vy
+            {
+                pc += 2;
+            }
+            break;
         case 0x0A:
             I = currentInstruction.nnn; // Set index register I to nnn
             break;
@@ -44,27 +63,8 @@ void Chip8::emulateInstruction()
             break;
         case 0x0D:
         {
-            uint8_t cX = V[currentInstruction.x] % 64; // X coordinate
-            uint8_t cY = V[currentInstruction.y] % 32; // Y coordinate
-            V[0xF] = 0; // Clear VF register (collision flag)
-            for (int i = 0; i < currentInstruction.n; ++i)
-            {
-                uint8_t spriteRow = memory[I + i];
-                for (int j = 0; j < 8; ++j)
-                {
-                    bool pixel = (spriteRow & (0x80 >> j)) != 0; // Check if the pixel is set
-                    int x = (cX + j) % 64;
-                    int y = (cY + i) % 32;
-                    int displayIndex = y * 64 + x;
-                    if (display[displayIndex] && pixel) // Collision detection
-                    {
-                        V[0xF] = 1; // Set VF to indicate collision
-                    }
-                    display[displayIndex] ^= pixel; // XOR operation to draw the sprite
-                }
-            }
+            updatec8display(); // Update the display with the sprite data
             break;
-
         }
         default:
             // Handle unknown opcodes
@@ -86,6 +86,29 @@ void Chip8::loadRom(const std::string &romPath)
     }
     romFile.read(reinterpret_cast<char*>(memory + 0x200), romSize);
     romFile.close();
+}
+
+inline void Chip8::updatec8display()
+{
+    uint8_t cX = V[currentInstruction.x] % 64; // X coordinate
+    uint8_t cY = V[currentInstruction.y] % 32; // Y coordinate
+    V[0xF] = 0; // Clear VF register (collision flag)
+    for (int i = 0; i < currentInstruction.n; ++i)
+    {
+        uint8_t spriteRow = memory[I + i];
+        for (int j = 0; j < 8; ++j)
+        {
+            bool pixel = (spriteRow & (0x80 >> j)) != 0; // Check if the pixel is set
+            int x = (cX + j) % 64;
+            int y = (cY + i) % 32;
+            int displayIndex = y * 64 + x;
+            if (display[displayIndex] && pixel) // Collision detection
+            {
+                V[0xF] = 1; // Set VF to indicate collision
+            }
+            display[displayIndex] ^= pixel; // XOR operation to draw the sprite
+        }
+    }
 }
 
 SDL_Texture *Chip8::getDisplayTexture() const

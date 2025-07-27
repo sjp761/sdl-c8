@@ -43,6 +43,7 @@ class Chip8
 
         void emulateInstruction();
         void loadRom(const std::string& romPath);
+        inline void updatec8display();
         SDL_Texture* getDisplayTexture() const;
         enum emulationState { RUNNING, PAUSED, STOPPED };
         emulationState state;

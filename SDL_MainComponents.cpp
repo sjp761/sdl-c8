@@ -33,35 +33,3 @@ std::tuple<uint8_t, uint8_t, uint8_t, uint8_t> SDL_MainComponents::extractRGBA()
     uint8_t a = DEFAULT_COLOR & 0xFF;
     return std::make_tuple(r, g, b, a);
 }
-
-void SDL_MainComponents::handleEvent(Chip8 &c8machine)
-{
-    SDL_Event event;
-    while (SDL_PollEvent(&event))
-    {
-        switch (event.type)
-        {
-            case SDL_QUIT:
-                c8machine.state = Chip8::STOPPED;
-            break;
-        case SDL_KEYDOWN:
-            switch (event.key.keysym.sym)
-            {
-                case SDLK_ESCAPE:
-                    c8machine.state = Chip8::STOPPED;
-                    break;
-                case SDLK_SPACE:
-                    if (c8machine.state == Chip8::RUNNING) 
-                    {
-                        c8machine.state = Chip8::PAUSED;
-                    }
-                    else if (c8machine.state == Chip8::PAUSED)
-                    {
-                        c8machine.state = Chip8::RUNNING;
-                    }
-                    break;
-            }
-            break;
-        }
-    }
-}

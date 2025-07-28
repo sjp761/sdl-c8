@@ -1,17 +1,69 @@
 #include "Chip8.h"
 #include <iostream>
 #include "SDL_MainComponents.h"
+#include <random>
+#include <thread>
+#include <atomic>
+#include <mutex>
+
+//A nibble is 4 bits
+
+void Chip8::handleInput()
+{
+    SDL_Event event;
+    while (SDL_PollEvent(&event))
+    {
+        switch (event.type)
+        {
+            case SDL_QUIT:
+                state = Chip8::STOPPED;
+                break;
+            case SDL_KEYDOWN:
+                switch (event.key.keysym.sym)
+                {
+                    case SDLK_ESCAPE:
+                        state = Chip8::STOPPED;
+                        break;
+                    case SDLK_SPACE:
+                        if (state == Chip8::RUNNING) 
+                        {
+                            state = Chip8::PAUSED;
+                        }
+                        else if (state == Chip8::PAUSED)
+                        {
+                            state = Chip8::RUNNING;
+                        }
+                        break;
+                    case SDLK_1: keypad[0x1] = true; break;
+                    case SDLK_2: keypad[0x2] = true; break;
+                    case SDLK_3: keypad[0x3] = true; break;
+                    case SDLK_4: keypad[0xC] = true; break;
+                    case SDLK_q: keypad[0x4] = true; break;
+                    case SDLK_w: keypad[0x5] = true; break;
+                    case SDLK_e: keypad[0x6] = true; break;
+                    case SDLK_r: keypad[0xD] = true; break;
+                    case SDLK_a: keypad[0x7] = true; break;
+                    case SDLK_s: keypad[0x8] = true; break;
+                    case SDLK_d: keypad[0x9] = true; break;
+                    case SDLK_f: keypad[0xE] = true; break;
+                    case SDLK_z: keypad[0xA] = true; break;
+                    case SDLK_x: keypad[0x0] = true; break;
+                    case SDLK_c: keypad[0xB] = true; break;
+                    case SDLK_v: keypad[0xF] = true; break;
+                }
+                break;
+        }
+    }
+}
 
 void Chip8::emulateInstruction()
 {
     currentInstruction = instruction_t(memory[pc] << 8 | memory[pc + 1]); //Combines two bytes into one instruction (16-bit opcode)
     pc += 2; // Move to the next instruction, +2 because each instruction is 2 bytes long
-
     switch ((currentInstruction.opcode >> 12) & 0xF)
     {
-        
         case 0x0:
-            switch (currentInstruction.nn & 0x00F)
+           switch (currentInstruction.nn) // 0x00nn (grab the 3rd and 4th nibble of the opcode)
             {
                 case 0x00E0: // Clear the display 
                     memset(display, false, sizeof(display));
@@ -68,7 +120,7 @@ void Chip8::emulateInstruction()
             V[currentInstruction.x] += currentInstruction.nn;
             break;
         case 0x08:
-            switch (currentInstruction.n)
+            switch (currentInstruction.n) //8xyn (grab the fourth nibble (n) from the opcode)
             {
                 case 0x0:
                     // Load Vx with Vy
@@ -148,11 +200,99 @@ void Chip8::emulateInstruction()
             // Jump to address nnn + V0
             pc = currentInstruction.nnn + V[0];
             break;
+        case 0x0C:
+            V[currentInstruction.x] = (rand() % 256) & currentInstruction.nn; // Set Vx to a random number
+            break;
         case 0x0D:
         {
             updatec8display(); // Update the display with the sprite data
             break;
         }
+        case 0x0E:
+            switch (currentInstruction.nn) // 0xExnn (grab the last byte of the opcode)
+            {
+                case 0x9E:
+                    if (keypad[V[currentInstruction.x]]) // Skip next instruction if key Vx is pressed
+                    {
+                        pc += 2;
+                    }
+                    break;
+                case 0xA1:
+                    if (!keypad[V[currentInstruction.x]]) // Skip next instruction if key Vx is not pressed
+                    {
+                        pc += 2;
+                    }
+                    break;
+                default:
+                    std::cerr << "Unknown opcode: " << currentInstruction.opcode << std::endl;
+                    break;
+            }
+            break;
+        
+        case 0x0F:
+            switch (currentInstruction.nn) // 0xFXNN (grab the 3rd and fourth nibble of the opcode)
+            {
+                case 0x0A:
+                {
+                    bool keyPressed = false;
+                    for (int i = 0; i < 16; ++i)
+                    {
+                        if (keypad[i]) {
+                            V[currentInstruction.x] = i; // Set Vx to the key pressed
+                            keyPressed = true;
+                            break;
+                        }
+                    }
+                    if (!keyPressed) {
+                        pc -= 2; // Repeat this instruction until a key is pressed
+                    }
+                    break;
+                }
+                case 0x1E:
+                    I += V[currentInstruction.x]; // Add Vx to I
+                    break;
+                case 0x07:  
+                    V[currentInstruction.x] = delayTimer; // Set VX to the value of the delay timer
+                    break;
+                case 0x15:
+                    delayTimer = V[currentInstruction.x]; // Set the delay timer to the value of VX
+                    break;
+                case 0x18:
+                    soundTimer = V[currentInstruction.x]; // Set the sound timer to the value of VX
+                    break;
+                case 0x29:
+                    I = 0x50 + (V[currentInstruction.x] * 5); // Set I to the address of the font sprite for Vx
+                    break;
+                case 0x33:
+                    // Store BCD representation of Vx in memory at I, I+1, I+2
+                    memory[I] = V[currentInstruction.x] / 100; // Hundreds place
+                    memory[I + 1] = (V[currentInstruction.x] / 10) % 10; // Tens place
+                    memory[I + 2] = V[currentInstruction.x] % 10; // Ones place
+                    break;
+                case 0x55:
+                    // Store registers V0 to Vx in memory starting at address I
+                    for (int i = 0; i <= currentInstruction.x; ++i) 
+                    {
+                        memory[I + i] = V[i];
+                    }
+                    // Some interpreters increment I, some don't. Choose one for compatibility.
+                    // I += currentInstruction.x + 1; // Optional: increment I
+                    break;
+                case 0x65:
+                    // Read registers V0 to Vx from memory starting at address I
+                    for (int i = 0; i <= currentInstruction.x; ++i)
+                    {
+                        V[i] = memory[I + i];
+                    }
+                    // Some interpreters increment I, some don't. Choose one for compatibility.
+                    // I += currentInstruction.x + 1; // Optional: increment I
+                    break;
+                default:
+                    std::cerr << "Unknown opcode: " << currentInstruction.opcode << std::endl;
+                    break;
+            }
+            break;
+        
         default:
             //Handle unknown opcodes
             std::cerr << "Unknown opcode: " << std::hex << currentInstruction.opcode << std::dec << std::endl;
@@ -210,10 +350,6 @@ SDL_Texture *Chip8::getDisplayTexture() const
     {
         pixels[i] = display[i] ? 0xFFFFFFFF : 0x00000000; // White for on, black for off
     }
-    if (SDL_UpdateTexture(texture, nullptr, pixels, 64 * sizeof(uint32_t)) < 0) {
-        std::cerr << "Failed to update texture: " << SDL_GetError() << std::endl;
-        SDL_DestroyTexture(texture);
-        return nullptr;
-    }
+    SDL_UpdateTexture(texture, nullptr, pixels, 64 * sizeof(uint32_t));
     return texture;
 }

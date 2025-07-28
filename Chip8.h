@@ -4,6 +4,9 @@
 #include <cstring>
 #include <vector>
 #include <SDL2/SDL_render.h>
+#include <atomic>
+#include <thread>
+#include <mutex>
 
 struct instruction_t
 {
@@ -40,7 +43,9 @@ class Chip8
         uint8_t soundTimer; // Sound timer
         uint16_t pc; // Program counter - current instruction address
         std::string currentRom; // Current ROM being executed
-
+        bool keypad[16]; // 16 keys for input (0x0 to 0xF)
+        void startInputThread();
+        void handleInput();
         void emulateInstruction();
         void loadRom(const std::string& romPath);
         inline void updatec8display();

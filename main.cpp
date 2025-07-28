@@ -7,10 +7,10 @@
 SDL_Window* SDL_MainComponents::window = nullptr;
 SDL_Renderer* SDL_MainComponents::renderer = nullptr;
 
-int main(int argc, char* argv[]) 
+int main(int argc, char* argv[])
 {
-    
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER) != 0) {
+    srand(static_cast<unsigned int>(time(0)));
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER | SDL_INIT_EVERYTHING) != 0) {
         std::cerr << "SDL_Init Error: " << SDL_GetError() << std::endl;
         return 1;
     }
@@ -19,9 +19,12 @@ int main(int argc, char* argv[])
     SDL_ShowWindow(SDL_MainComponents::window);
     while (c8machine.state != Chip8::STOPPED)
     {
-        SDL_MainComponents::handleEvent(c8machine);
-        c8machine.emulateInstruction();
+        c8machine.handleInput();
         SDL_Delay(16); // Roughly 60 FPS
+        for (int i = 0; i < 700; ++i) 
+        {
+        c8machine.emulateInstruction();
+        }
         SDL_MainComponents::display.reset(c8machine.getDisplayTexture());
         SDL_MainComponents::renderUpdate();
     }

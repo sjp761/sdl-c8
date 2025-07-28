@@ -31,6 +31,7 @@ int main(int argc, char* argv[])
         if (delayTime > 0) {
             SDL_Delay(delayTime * 1000 / SDL_GetPerformanceFrequency());
         }
+        c8machine.updateTimers();
         SDL_MainComponents::display.reset(c8machine.getDisplayTexture());
         SDL_MainComponents::renderUpdate();
     }

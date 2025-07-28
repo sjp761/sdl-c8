@@ -16,7 +16,12 @@ void Chip8::updateTimers()
     }
     if (soundTimer > 0)
     {
+        SDL_PauseAudioDevice(beeper.dev, 0); // Unpause audio device if sound timer is active
         --soundTimer;
+    }
+    else
+    {
+        SDL_PauseAudioDevice(beeper.dev, 1); // Pause audio device if sound timer is not active
     }
 }
 

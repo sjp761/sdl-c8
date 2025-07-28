@@ -7,6 +7,7 @@
 #include <atomic>
 #include <thread>
 #include <mutex>
+#include "SDLBeep.h"
 
 struct instruction_t
 {
@@ -52,6 +53,7 @@ class Chip8
         SDL_Texture* getDisplayTexture() const;
         enum emulationState { RUNNING, PAUSED, STOPPED };
         emulationState state;
+        SDLBeep beeper;
         instruction_t currentInstruction;
 
         const uint8_t font[80] = 
@@ -79,6 +81,7 @@ class Chip8
 
         Chip8(const std::string& romPath) : state(RUNNING), currentRom(romPath)
         {
+            beeper = SDLBeep();
             memset(display, 0, sizeof(display));
             memset(memory, 0, sizeof(memory));
             memset(V, 0, sizeof(V));

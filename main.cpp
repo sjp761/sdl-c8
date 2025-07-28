@@ -20,10 +20,16 @@ int main(int argc, char* argv[])
     while (c8machine.state != Chip8::STOPPED)
     {
         c8machine.handleInput();
-        SDL_Delay(16); // Roughly 60 FPS
-        for (int i = 0; i < 700; ++i) 
+        uint64_t startTime = SDL_GetPerformanceCounter();
+        for (int i = 0; i < 700/60; ++i) 
         {
         c8machine.emulateInstruction();
+        }
+        uint64_t endTime = SDL_GetPerformanceCounter();
+        uint64_t elapsedTime = endTime - startTime;
+        uint64_t delayTime = (SDL_GetPerformanceFrequency() / 60) - elapsedTime;
+        if (delayTime > 0) {
+            SDL_Delay(delayTime * 1000 / SDL_GetPerformanceFrequency());
         }
         SDL_MainComponents::display.reset(c8machine.getDisplayTexture());
         SDL_MainComponents::renderUpdate();

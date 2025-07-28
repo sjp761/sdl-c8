@@ -44,7 +44,7 @@ class Chip8
         uint16_t pc; // Program counter - current instruction address
         std::string currentRom; // Current ROM being executed
         bool keypad[16]; // 16 keys for input (0x0 to 0xF)
-        void startInputThread();
+        void updateTimers();
         void handleInput();
         void emulateInstruction();
         void loadRom(const std::string& romPath);
@@ -80,6 +80,10 @@ class Chip8
         Chip8(const std::string& romPath) : state(RUNNING), currentRom(romPath)
         {
             memset(display, 0, sizeof(display));
+            memset(memory, 0, sizeof(memory));
+            memset(V, 0, sizeof(V));
+            memset(keypad, 0, sizeof(keypad));
+            I = 0;
             currentRom = romPath;
             loadRom(romPath);
             pc = 0x200; // Program starts at 0x200

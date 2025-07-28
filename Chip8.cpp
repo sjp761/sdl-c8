@@ -8,6 +8,18 @@
 
 //A nibble is 4 bits
 
+void Chip8::updateTimers()
+{
+    if (delayTimer > 0)
+    {
+        --delayTimer;
+    }
+    if (soundTimer > 0)
+    {
+        --soundTimer;
+    }
+}
+
 void Chip8::handleInput()
 {
     SDL_Event event;
@@ -34,7 +46,7 @@ void Chip8::handleInput()
                             state = Chip8::RUNNING;
                         }
                         break;
-                    case SDLK_1: keypad[0x1] = true; break;
+                    case SDLK_1: keypad[0x1] = true; std::cout << "Key 1 pressed" << std::endl; break;
                     case SDLK_2: keypad[0x2] = true; break;
                     case SDLK_3: keypad[0x3] = true; break;
                     case SDLK_4: keypad[0xC] = true; break;
@@ -50,6 +62,27 @@ void Chip8::handleInput()
                     case SDLK_x: keypad[0x0] = true; break;
                     case SDLK_c: keypad[0xB] = true; break;
                     case SDLK_v: keypad[0xF] = true; break;
+                }
+                break;
+            case SDL_KEYUP:
+                switch (event.key.keysym.sym)
+                {
+                    case SDLK_1: keypad[0x1] = false; break;
+                    case SDLK_2: keypad[0x2] = false; break;
+                    case SDLK_3: keypad[0x3] = false; break;
+                    case SDLK_4: keypad[0xC] = false; break;
+                    case SDLK_q: keypad[0x4] = false; break;
+                    case SDLK_w: keypad[0x5] = false; break;
+                    case SDLK_e: keypad[0x6] = false; break;
+                    case SDLK_r: keypad[0xD] = false; break;
+                    case SDLK_a: keypad[0x7] = false; break;
+                    case SDLK_s: keypad[0x8] = false; break;
+                    case SDLK_d: keypad[0x9] = false; break;
+                    case SDLK_f: keypad[0xE] = false; break;
+                    case SDLK_z: keypad[0xA] = false; break;
+                    case SDLK_x: keypad[0x0] = false; break;
+                    case SDLK_c: keypad[0xB] = false; break;
+                    case SDLK_v: keypad[0xF] = false; break;
                 }
                 break;
         }

@@ -3,6 +3,7 @@
 #include "SDL_MainComponents.h"
 #include "SDL_SmartPointer.h"
 #include "Chip8.h"
+#include <filesystem>
 
 SDL_Window* SDL_MainComponents::window = nullptr;
 SDL_Renderer* SDL_MainComponents::renderer = nullptr;
@@ -14,7 +15,15 @@ int main(int argc, char* argv[])
         std::cerr << "SDL_Init Error: " << SDL_GetError() << std::endl;
         return 1;
     }
-    Chip8 c8machine("/home/user/Documents/sdl-c8/roms/flags.ch8"); // Pass ROM path directly if Chip8 expects std::string or const char*
+    std::string romPath;
+    if (argc < 2) {
+        std::cerr << "Rom path empty: " << std::endl;
+        romPath = "/home/user/Documents/sdl-c8/roms/quirks.ch8";
+    }
+    else {
+        romPath = std::string(argv[1]);
+    }
+    Chip8 c8machine(romPath); // Pass ROM path directly if Chip8 expects std::string or const char*
     SDL_MainComponents::init();
     SDL_ShowWindow(SDL_MainComponents::window);
     while (c8machine.state != Chip8::STOPPED)

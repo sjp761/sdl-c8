@@ -6,6 +6,8 @@ include_directories(${SDL2_INCLUDE_DIRS})
 
 add_executable(sdl-c8 Chip8.cpp SDL_MainComponents.cpp main.cpp SDLBeep.cpp)
 target_link_libraries(sdl-c8 ${SDL2_LIBRARIES})
+set_target_properties(sdl-c8 PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}")
+
 
 include(CTest)
 enable_testing()

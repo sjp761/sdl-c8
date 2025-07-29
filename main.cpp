@@ -10,6 +10,7 @@ SDL_Renderer* SDL_MainComponents::renderer = nullptr;
 
 int main(int argc, char* argv[])
 {
+    std::cout << std::filesystem::current_path() << std::endl;
     srand(static_cast<unsigned int>(time(0)));
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER | SDL_INIT_EVERYTHING) != 0) {
         std::cerr << "SDL_Init Error: " << SDL_GetError() << std::endl;

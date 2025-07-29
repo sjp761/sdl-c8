@@ -14,7 +14,7 @@ int main(int argc, char* argv[])
         std::cerr << "SDL_Init Error: " << SDL_GetError() << std::endl;
         return 1;
     }
-    Chip8 c8machine("/home/user/Documents/sdl-c8/test.ch8"); // Pass ROM path directly if Chip8 expects std::string or const char*
+    Chip8 c8machine("/home/user/Documents/sdl-c8/roms/flags.ch8"); // Pass ROM path directly if Chip8 expects std::string or const char*
     SDL_MainComponents::init();
     SDL_ShowWindow(SDL_MainComponents::window);
     while (c8machine.state != Chip8::STOPPED)

@@ -9,4 +9,4 @@ Good reference in case you get stuck
 A high level reference for CHIP 8 technical specs
 
 [Timendus for chip 8 test suite](https://github.com/Timendus/chip8-test-suite)  
-ROMS for testing functionality
+ROMS for testing functionality. Licensed under GPL

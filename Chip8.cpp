@@ -167,14 +167,17 @@ void Chip8::emulateInstruction()
                 case 0x1:
                     // Set Vx to Vx OR Vy
                     V[currentInstruction.x] |= V[currentInstruction.y];
+                    V[0xF] = 0; // QUIRK
                     break;
                 case 0x2:
                     // Set Vx to Vx AND Vy
                     V[currentInstruction.x] &= V[currentInstruction.y];
+                    V[0xF] = 0; // QUIRK
                     break;
                 case 0x3:
                     // Set Vx to Vx XOR Vy
                     V[currentInstruction.x] ^= V[currentInstruction.y];
+                    V[0xF] = 0; // QUIRK
                     break;
                 case 0x4:
                     if ((V[currentInstruction.x] + V[currentInstruction.y]) > 255)
@@ -200,8 +203,8 @@ void Chip8::emulateInstruction()
                     V[currentInstruction.x] -= V[currentInstruction.y];
                     break;
                 case 0x06:
-                    // Shift Vx right by 1
-                    V[15] = V[currentInstruction.x] & 0x01; // Set VF to the least significant bit before shifting
+                    V[currentInstruction.x] = V[currentInstruction.y];
+                    V[15] = V[currentInstruction.x] & 0x1; // Set VF to least significant bit before shifting
                     V[currentInstruction.x] >>= 1;
                     break;
                 case 0x07:
@@ -214,8 +217,8 @@ void Chip8::emulateInstruction()
                     V[currentInstruction.x] = V[currentInstruction.y] - V[currentInstruction.x];
                     break;
                 case 0xE:
-                    // Shift Vx left by 1
-                    V[15] = (V[currentInstruction.x] & 0x80) >> 7; // Set VF to the most significant bit before shifting
+                    V[currentInstruction.x] = V[currentInstruction.y];
+                    V[15] = V[currentInstruction.x] & 0x1; // Set VF to the most significant bit before shifting
                     V[currentInstruction.x] <<= 1;
                     break;
                 default:
@@ -313,8 +316,7 @@ void Chip8::emulateInstruction()
                     {
                         memory[I + i] = V[i];
                     }
-                    // Some interpreters increment I, some don't. Choose one for compatibility.
-                    // I += currentInstruction.x + 1; // Optional: increment I
+                    I += 1 + currentInstruction.x; // QUIRK - Increment I by the number of registers stored + 1
                     break;
                 case 0x65:
                     // Read registers V0 to Vx from memory starting at address I
@@ -323,7 +325,7 @@ void Chip8::emulateInstruction()
                         V[i] = memory[I + i];
                     }
                     // Some interpreters increment I, some don't. Choose one for compatibility.
-                    // I += currentInstruction.x + 1; // Optional: increment I
+                    I += 1 + currentInstruction.x; // QUIRK - Increment I by the number of registers read + 1
                     break;
                 default:
                     std::cerr << "Unknown opcode: " << currentInstruction.opcode << std::endl;

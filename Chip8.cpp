@@ -180,28 +180,29 @@ void Chip8::emulateInstruction()
                     V[0xF] = 0; // QUIRK
                     break;
                 case 0x4:
-                    V[currentInstruction.x] = V[currentInstruction.x] + V[currentInstruction.y];
-                    if ((V[currentInstruction.x] + V[currentInstruction.y]) > 255)
-                    {
-                        V[15] = 1;
-                    }
-                    else
-                    {
-                        V[15] = 0;
-                    }
+                {
+                    bool carry = (V[currentInstruction.x] + V[currentInstruction.y]) > 0xFF; // Check for overflow
+                    V[currentInstruction.x] += V[currentInstruction.y];
+                    V[15] = carry; // Set VF to 1 if there's a carry, 0 otherwise
                     break;
+
+                }
                 case 0x5:
                 {
                     bool carry = V[currentInstruction.x] >= V[currentInstruction.y];
                     V[currentInstruction.x] -= V[currentInstruction.y];
                     V[15] = carry;
                     break;
+
                 }
                 case 0x06:
+                {
                     V[currentInstruction.x] = V[currentInstruction.y];
-                    V[15] = V[currentInstruction.x] & 0x1; // Set VF to least significant bit before shifting
+                    int shiftedBit = V[currentInstruction.x] & 0x1; //Get the least significant bit
                     V[currentInstruction.x] >>= 1;
+                    V[15] = shiftedBit; // Set VF to the least significant bit before shifting
                     break;
+                }
                 case 0x07:
                 {
                     bool carry = V[currentInstruction.y] >= V[currentInstruction.x];
@@ -210,10 +211,13 @@ void Chip8::emulateInstruction()
                     break;
                 }
                 case 0xE:
+                {
                     V[currentInstruction.x] = V[currentInstruction.y];
-                    V[15] = V[currentInstruction.x] & 0x1; // Set VF to the most significant bit before shifting
+                    int shiftedBit = (V[currentInstruction.x] & 0x80) >> 7; // Get the most significant bit before shifting
                     V[currentInstruction.x] <<= 1;
+                    V[15] = shiftedBit; // Set VF to the most significant bit before shifting
                     break;
+                }
                 default:
                     //Handle unknown opcodes
                     std::cerr << "Unknown opcode: " << std::hex << currentInstruction.opcode << std::dec << std::endl;

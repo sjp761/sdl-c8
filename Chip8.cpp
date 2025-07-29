@@ -180,6 +180,7 @@ void Chip8::emulateInstruction()
                     V[0xF] = 0; // QUIRK
                     break;
                 case 0x4:
+                    V[currentInstruction.x] = V[currentInstruction.x] + V[currentInstruction.y];
                     if ((V[currentInstruction.x] + V[currentInstruction.y]) > 255)
                     {
                         V[15] = 1;
@@ -188,34 +189,26 @@ void Chip8::emulateInstruction()
                     {
                         V[15] = 0;
                     }
-                    V[currentInstruction.x] = V[currentInstruction.x] + V[currentInstruction.y];
                     break;
                 case 0x5:
-                    // Subtract Vy from Vx
-                    if (V[currentInstruction.x] > V[currentInstruction.y]) 
-                    {
-                        V[15] = 1; // Set VF to 1 if no borrow
-                    }
-                    else
-                    {
-                        V[15] = 0; // Set VF to 0 if borrow occurs
-                    }
+                {
+                    bool carry = V[currentInstruction.x] >= V[currentInstruction.y];
                     V[currentInstruction.x] -= V[currentInstruction.y];
+                    V[15] = carry;
                     break;
+                }
                 case 0x06:
                     V[currentInstruction.x] = V[currentInstruction.y];
                     V[15] = V[currentInstruction.x] & 0x1; // Set VF to least significant bit before shifting
                     V[currentInstruction.x] >>= 1;
                     break;
                 case 0x07:
-                    // Set Vx to Vy - Vx
-                    if (V[currentInstruction.y] > V[currentInstruction.x]) {
-                        V[15] = 0; // Set VF to 0 if borrow occurs
-                    } else {
-                        V[15] = 1; // Set VF to 1 if no borrow
-                    }
+                {
+                    bool carry = V[currentInstruction.y] >= V[currentInstruction.x];
                     V[currentInstruction.x] = V[currentInstruction.y] - V[currentInstruction.x];
+                    V[15] = carry;
                     break;
+                }
                 case 0xE:
                     V[currentInstruction.x] = V[currentInstruction.y];
                     V[15] = V[currentInstruction.x] & 0x1; // Set VF to the most significant bit before shifting

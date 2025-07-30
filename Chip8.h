@@ -3,7 +3,7 @@
 #include <fstream>
 #include <cstring>
 #include <vector>
-#include <SDL2/SDL_render.h>
+#include <SDL3/SDL_render.h>
 #include <atomic>
 #include <thread>
 #include <mutex>

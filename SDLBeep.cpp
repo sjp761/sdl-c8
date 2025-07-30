@@ -2,7 +2,7 @@
 
 namespace {
     constexpr int SAMPLE_RATE = 44100;
-    constexpr SDL_AudioFormat AUDIO_FORMAT = AUDIO_S16LSB;
+    constexpr SDL_AudioFormat AUDIO_FORMAT = SDL_AUDIO_S16LE;
     constexpr int CHANNELS = 1;
     constexpr int SAMPLES = 4096;
     constexpr int SQUARE_WAVE_FREQ = 440;
@@ -12,30 +12,28 @@ namespace {
 
 SDLBeep::SDLBeep()
 {
-    want = {
-        .freq = SAMPLE_RATE,
-        .format = AUDIO_FORMAT,
-        .channels = CHANNELS,
-        .samples = SAMPLES,
-        .callback = audioCallback,
-        .userdata = this,
-    };
-
-    dev = SDL_OpenAudioDevice(nullptr, 0, &want, &have, 0);
+    want.freq = SAMPLE_RATE;
+    want.format = AUDIO_FORMAT;
+    want.channels = CHANNELS;
+    dev = SDL_OpenAudioDevice(0, &want);
+    stream = SDL_OpenAudioDeviceStream(dev, &want, &audioCallback, this);
 }
 
-void SDLBeep::audioCallback(void *userdata, uint8_t *stream, int len)
+void SDLBeep::audioCallback(void *userdata, SDL_AudioStream *stream, int additional_amount, int total_amount)
 {
-    int16_t *data = reinterpret_cast<int16_t *>(stream);
-    uint32_t running_sample_index = 0;
+    uint8_t buffer[SAMPLES * sizeof(int16_t)];
+    int16_t *data = reinterpret_cast<int16_t *>(buffer);
+    static uint32_t running_sample_index = 0;
     int32_t square_wave_period = SAMPLE_RATE / SQUARE_WAVE_FREQ;
 
-    for (int i = 0; i < len / sizeof(int16_t); ++i)
+    for (int i = 0; i < SAMPLES; ++i)
     {
         data[i] = (running_sample_index++ / (square_wave_period / 2)) % 2 == 0
             ? SQUARE_WAVE_HIGH
             : SQUARE_WAVE_LOW;
     }
+
+    SDL_PutAudioStreamData(stream, buffer, SAMPLES * sizeof(int16_t));
 }
 
 

@@ -1,12 +1,12 @@
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 #pragma once
 
 class SDLBeep
 {
     public:
         SDL_AudioSpec want;
-        SDL_AudioSpec have;
+        SDL_AudioStream *stream;
         SDL_AudioDeviceID dev;
         SDLBeep();
-        static void audioCallback(void* userdata, uint8_t* stream, int len);
+        static void audioCallback(void *userdata, SDL_AudioStream *stream, int additional_amount, int total_amount);
 };

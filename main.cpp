@@ -1,4 +1,4 @@
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 #include <iostream>
 #include "SDL_MainComponents.h"
 #include "SDL_SmartPointer.h"
@@ -12,7 +12,7 @@ int main(int argc, char* argv[])
 {
     std::cout << std::filesystem::current_path() << std::endl;
     srand(static_cast<unsigned int>(time(0)));
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER | SDL_INIT_EVERYTHING) != 0) {
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) == false) {
         std::cerr << "SDL_Init Error: " << SDL_GetError() << std::endl;
         return 1;
     }

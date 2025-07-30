@@ -1,6 +1,6 @@
 #pragma once
 #include "SDL_SmartPointer.h"
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 #include "Chip8.h"
 #include <tuple>
 

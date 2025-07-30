@@ -1,6 +1,6 @@
 #pragma once
 #include <memory>
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 #include <iostream>
 
 template <typename T>
@@ -23,7 +23,7 @@ template <>
 struct SDL_Deleter<SDL_Surface> {
     void operator()(SDL_Surface* ptr) const {
         if (ptr) {
-            SDL_FreeSurface(ptr);
+            SDL_DestroySurface(ptr);
         }
     }
 };

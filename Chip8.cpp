@@ -1,6 +1,7 @@
 #include "Chip8.h"
 #include <iostream>
 #include "SDL_MainComponents.h"
+#include "Configuration.h"
 #include <random>
 #include <thread>
 #include <atomic>
@@ -16,12 +17,12 @@ void Chip8::updateTimers()
     }
     if (soundTimer > 0)
     {
-        SDL_PauseAudioDevice(beeper.dev, 0); // Unpause audio device if sound timer is active
+        SDL_PauseAudioDevice(beeper.dev); // Unpause audio device if sound timer is active
         --soundTimer;
     }
     else
     {
-        SDL_PauseAudioDevice(beeper.dev, 1); // Pause audio device if sound timer is not active
+        SDL_ResumeAudioDevice(beeper.dev); // Pause audio device if sound timer is not active
     }
 }
 
@@ -32,11 +33,11 @@ void Chip8::handleInput()
     {
         switch (event.type)
         {
-            case SDL_QUIT:
+            case SDL_EVENT_QUIT:
                 state = Chip8::STOPPED;
                 break;
-            case SDL_KEYDOWN:
-                switch (event.key.keysym.sym)
+            case SDL_EVENT_KEY_DOWN:
+                switch (event.key.key)
                 {
                     case SDLK_ESCAPE:
                         state = Chip8::STOPPED;
@@ -55,39 +56,39 @@ void Chip8::handleInput()
                     case SDLK_2: keypad[0x2] = true; break;
                     case SDLK_3: keypad[0x3] = true; break;
                     case SDLK_4: keypad[0xC] = true; break;
-                    case SDLK_q: keypad[0x4] = true; break;
-                    case SDLK_w: keypad[0x5] = true; break;
-                    case SDLK_e: keypad[0x6] = true; break;
-                    case SDLK_r: keypad[0xD] = true; break;
-                    case SDLK_a: keypad[0x7] = true; break;
-                    case SDLK_s: keypad[0x8] = true; break;
-                    case SDLK_d: keypad[0x9] = true; break;
-                    case SDLK_f: keypad[0xE] = true; break;
-                    case SDLK_z: keypad[0xA] = true; break;
-                    case SDLK_x: keypad[0x0] = true; break;
-                    case SDLK_c: keypad[0xB] = true; break;
-                    case SDLK_v: keypad[0xF] = true; break;
+                    case SDLK_Q: keypad[0x4] = true; break;
+                    case SDLK_W: keypad[0x5] = true; break;
+                    case SDLK_E: keypad[0x6] = true; break;
+                    case SDLK_R: keypad[0xD] = true; break;
+                    case SDLK_A: keypad[0x7] = true; break;
+                    case SDLK_S: keypad[0x8] = true; break;
+                    case SDLK_D: keypad[0x9] = true; break;
+                    case SDLK_F: keypad[0xE] = true; break;
+                    case SDLK_Z: keypad[0xA] = true; break;
+                    case SDLK_X: keypad[0x0] = true; break;
+                    case SDLK_C: keypad[0xB] = true; break;
+                    case SDLK_V: keypad[0xF] = true; break;
                 }
                 break;
-            case SDL_KEYUP:
-                switch (event.key.keysym.sym)
+            case SDL_EVENT_KEY_UP:
+                switch (event.key.key)
                 {
                     case SDLK_1: keypad[0x1] = false; break;
                     case SDLK_2: keypad[0x2] = false; break;
                     case SDLK_3: keypad[0x3] = false; break;
                     case SDLK_4: keypad[0xC] = false; break;
-                    case SDLK_q: keypad[0x4] = false; break;
-                    case SDLK_w: keypad[0x5] = false; break;
-                    case SDLK_e: keypad[0x6] = false; break;
-                    case SDLK_r: keypad[0xD] = false; break;
-                    case SDLK_a: keypad[0x7] = false; break;
-                    case SDLK_s: keypad[0x8] = false; break;
-                    case SDLK_d: keypad[0x9] = false; break;
-                    case SDLK_f: keypad[0xE] = false; break;
-                    case SDLK_z: keypad[0xA] = false; break;
-                    case SDLK_x: keypad[0x0] = false; break;
-                    case SDLK_c: keypad[0xB] = false; break;
-                    case SDLK_v: keypad[0xF] = false; break;
+                    case SDLK_Q: keypad[0x4] = false; break;
+                    case SDLK_W: keypad[0x5] = false; break;
+                    case SDLK_E: keypad[0x6] = false; break;
+                    case SDLK_R: keypad[0xD] = false; break;
+                    case SDLK_A: keypad[0x7] = false; break;
+                    case SDLK_S: keypad[0x8] = false; break;
+                    case SDLK_D: keypad[0x9] = false; break;
+                    case SDLK_F: keypad[0xE] = false; break;
+                    case SDLK_Z: keypad[0xA] = false; break;
+                    case SDLK_X: keypad[0x0] = false; break;
+                    case SDLK_C: keypad[0xB] = false; break;
+                    case SDLK_V: keypad[0xF] = false; break;
                 }
                 break;
         }
@@ -377,16 +378,17 @@ inline void Chip8::updatec8display()
 
 SDL_Texture *Chip8::getDisplayTexture() const
 {
-    SDL_Texture *texture = SDL_CreateTexture(SDL_MainComponents::renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STATIC, 64, 32);
+    SDL_Texture *texture = SDL_CreateTexture(SDL_MainComponents::renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STATIC, configuration::WINDOW_WIDTH, configuration::WINDOW_HEIGHT);
+    SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);
     if (!texture) {
         std::cerr << "Failed to create texture: " << SDL_GetError() << std::endl;
         return nullptr;
     }
-    uint32_t pixels[64 * 32];
-    for (int i = 0; i < 64 * 32; ++i)
+    uint32_t pixels[configuration::WINDOW_WIDTH * configuration::WINDOW_HEIGHT];
+    for (int i = 0; i < configuration::WINDOW_WIDTH * configuration::WINDOW_HEIGHT; i++)
     {
         pixels[i] = display[i] ? 0xFFFFFFFF : 0x00000000; // White for on, black for off
     }
-    SDL_UpdateTexture(texture, nullptr, pixels, 64 * sizeof(uint32_t));
+    SDL_UpdateTexture(texture, nullptr, pixels, configuration::WINDOW_WIDTH * sizeof(uint32_t));
     return texture;
 }

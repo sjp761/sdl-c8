@@ -6,7 +6,6 @@ class SDLBeep
     public:
         SDL_AudioSpec want;
         SDL_AudioStream *stream;
-        SDL_AudioDeviceID dev;
         SDLBeep();
         static void audioCallback(void *userdata, SDL_AudioStream *stream, int additional_amount, int total_amount);
 };

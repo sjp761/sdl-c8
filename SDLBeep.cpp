@@ -6,8 +6,8 @@ namespace {
     constexpr int CHANNELS = 1;
     constexpr int SAMPLES = 4096;
     constexpr int SQUARE_WAVE_FREQ = 440;
-    constexpr int16_t SQUARE_WAVE_HIGH = 32767;
-    constexpr int16_t SQUARE_WAVE_LOW = -32768;
+    constexpr int16_t SQUARE_WAVE_HIGH = 32767/100;
+    constexpr int16_t SQUARE_WAVE_LOW = -32768/100;
 }
 
 SDLBeep::SDLBeep()
@@ -15,8 +15,7 @@ SDLBeep::SDLBeep()
     want.freq = SAMPLE_RATE;
     want.format = AUDIO_FORMAT;
     want.channels = CHANNELS;
-    dev = SDL_OpenAudioDevice(0, &want);
-    stream = SDL_OpenAudioDeviceStream(dev, &want, &audioCallback, this);
+    stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &want, &audioCallback, this);
 }
 
 void SDLBeep::audioCallback(void *userdata, SDL_AudioStream *stream, int additional_amount, int total_amount)

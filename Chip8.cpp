@@ -97,265 +97,12 @@ void Chip8::handleInput()
 
 void Chip8::emulateInstruction()
 {
-    currentInstruction = instruction_t(memory[pc] << 8 | memory[pc + 1]); //Combines two bytes into one instruction (16-bit opcode)
-    pc += 2; // Move to the next instruction, +2 because each instruction is 2 bytes long
-    switch ((currentInstruction.opcode >> 12) & 0xF)
-    {
-        case 0x0:
-           switch (currentInstruction.nn) // 0x00nn (grab the 3rd and 4th nibble of the opcode)
-            {
-                case 0x00E0: // Clear the display 
-                    memset(display, false, sizeof(display));
-                    break;
-                case 0x00EE: // Return from subroutine
-                    if (!stack.empty()) 
-                    {
-                        uint16_t returnAddress = stack.back();
-                        stack.pop_back();
-                        pc = returnAddress; // Set PC to the address popped from the stack
-                    } 
-                    else 
-                    {
-                        std::cerr << "Stack underflow on 00EE (return from subroutine)" << std::endl;
-                        // Optionally, set state = STOPPED or handle as needed
-                    }
-                    break;
-            }
-            break;
-        case 0x01:
-            // Jump to address nnn
-            pc = currentInstruction.nnn;
-            break;
-        case 0x02:
-            // Call subroutine at nnn
-            stack.push_back(pc); // Push current PC onto stack
-            pc = currentInstruction.nnn; // Set PC to nnn
-            break;
-        
-        case 0x03:
-            if (V[currentInstruction.x] == currentInstruction.nn) // Skip next instruction if Vx == nn
-            {
-                pc += 2; //Incrementing PC by 2 skips the next instruction
-            }
-            break;
-        case 0x04:
-            if (V[currentInstruction.x] != currentInstruction.nn) // Skip next instruction if Vx != nn
-            {
-                pc += 2;
-            }
-            break;
-        case 0x05:
-            if (V[currentInstruction.x] == V[currentInstruction.y]) // Skip next instruction if Vx == Vy
-            {
-                pc += 2;
-            }
-            break;
-        case 0x06:
-            // Load register Vx with nn
-            V[currentInstruction.x] = currentInstruction.nn;
-            break;
-        case 0x07:
-            // Add nn to register Vx
-            V[currentInstruction.x] += currentInstruction.nn;
-            break;
-        case 0x08:
-            switch (currentInstruction.n) //8xyn (grab the fourth nibble (n) from the opcode)
-            {
-                case 0x0:
-                    // Load Vx with Vy
-                    V[currentInstruction.x] = V[currentInstruction.y];
-                    break;
-                case 0x1:
-                    // Set Vx to Vx OR Vy
-                    V[currentInstruction.x] |= V[currentInstruction.y];
-                    if (configuration::vfReset)
-                        V[0xF] = 0; // QUIRK - configure with vfReset
-                    break;
-                case 0x2:
-                    // Set Vx to Vx AND Vy
-                    V[currentInstruction.x] &= V[currentInstruction.y];
-                    if (configuration::vfReset)
-                        V[0xF] = 0; // QUIRK - configure with vfReset
-                    break;
-                case 0x3:
-                    // Set Vx to Vx XOR Vy
-                    V[currentInstruction.x] ^= V[currentInstruction.y];
-                    if (configuration::vfReset)
-                        V[0xF] = 0; // QUIRK - configure with vfReset
-                    break;
-                case 0x4:
-                {
-                    bool carry = (V[currentInstruction.x] + V[currentInstruction.y]) > 0xFF; // Check for overflow
-                    V[currentInstruction.x] += V[currentInstruction.y];
-                    V[15] = carry; // Set VF to 1 if there's a carry, 0 otherwise
-                    break;
+    currentInstruction = instruction_t(memory[pc] << 8 | memory[pc + 1]);
+    pc += 2;
+    uint8_t nibble = (currentInstruction.opcode >> 12) & 0xF;
+    opcodeTable[nibble](*this); // Call the appropriate opcode handler
 
-                }
-                case 0x5:
-                {
-                    bool carry = V[currentInstruction.x] >= V[currentInstruction.y];
-                    V[currentInstruction.x] -= V[currentInstruction.y];
-                    V[15] = carry;
-                    break;
-
-                }
-                case 0x06:
-                {
-                    if (configuration::mode == 0)
-                        V[currentInstruction.x] = V[currentInstruction.y]; //Quirk - configure with chip mode
-                    int shiftedBit = V[currentInstruction.x] & 0x1; //Get the least significant bit
-                    V[currentInstruction.x] >>= 1;
-                    V[15] = shiftedBit; // Set VF to the least significant bit before shifting
-                    break;
-                }
-                case 0x07:
-                {
-                    bool carry = V[currentInstruction.y] >= V[currentInstruction.x];
-                    V[currentInstruction.x] = V[currentInstruction.y] - V[currentInstruction.x];
-                    V[15] = carry;
-                    break;
-                }
-                case 0xE:
-                {
-                    if (configuration::mode == 0)
-                        V[currentInstruction.x] = V[currentInstruction.y]; //Quirk - configure with chip mode
-                    int shiftedBit = (V[currentInstruction.x] & 0x80) >> 7; // Get the most significant bit before shifting
-                    V[currentInstruction.x] <<= 1;
-                    V[15] = shiftedBit; // Set VF to the most significant bit before shifting
-                    break;
-                }
-                default:
-                    //Handle unknown opcodes
-                    std::cerr << "Unknown opcode: " << std::hex << currentInstruction.opcode << std::dec << std::endl;
-                    break;
-
-            }
-            break;
-        case 0x09:
-            if (V[currentInstruction.x] != V[currentInstruction.y]) // Skip next instruction if Vx != Vy
-            {
-                pc += 2;
-            }
-            break;
-        case 0x0A:
-            I = currentInstruction.nnn; // Set index register I to nnn
-            break;
-        case 0x0B:
-            // Jump to address nnn + V0
-            if (!configuration::jumping)
-                pc = currentInstruction.nnn + V[0]; // QUIRK - configure with Jumping - 0 if off, X if on
-            else
-                pc = currentInstruction.nnn + V[currentInstruction.x]; // QUIRK - configure with Jumping - 0 if off, X if on
-            break;
-        case 0x0C:
-            V[currentInstruction.x] = (rand() % 256) & currentInstruction.nn; // Set Vx to a random number
-            break;
-        case 0x0D:
-        {
-            updatec8display(); // Update the display with the sprite data
-            break;
-        }
-        case 0x0E:
-            switch (currentInstruction.nn) // 0xExnn (grab the last byte of the opcode)
-            {
-                case 0x9E:
-                    if (keypad[V[currentInstruction.x]]) // Skip next instruction if key Vx is pressed
-                    {
-                        pc += 2;
-                    }
-                    break;
-                case 0xA1:
-                    if (!keypad[V[currentInstruction.x]]) // Skip next instruction if key Vx is not pressed
-                    {
-                        pc += 2;
-                    }
-                    break;
-                default:
-                    std::cerr << "Unknown opcode: " << currentInstruction.opcode << std::endl;
-                    break;
-            }
-            break;
-        
-        case 0x0F:
-            switch (currentInstruction.nn) // 0xFXNN (grab the 3rd and fourth nibble of the opcode)
-            {
-                case 0x0A:
-                {
-                    bool keyPressed = false;
-                    for (int i = 0; i < 16; ++i)
-                    {
-                        if (keypad[i]) {
-                            V[currentInstruction.x] = i; // Set Vx to the key pressed
-                            keyPressed = true;
-                            break;
-                        }
-                    }
-                    if (!keyPressed) {
-                        pc -= 2; // Repeat this instruction until a key is pressed
-                    }
-                    break;
-                }
-                case 0x1E:
-                    I += V[currentInstruction.x]; // Add Vx to I
-                    break;
-                case 0x07:  
-                    V[currentInstruction.x] = delayTimer; // Set VX to the value of the delay timer
-                    break;
-                case 0x15:
-                    delayTimer = V[currentInstruction.x]; // Set the delay timer to the value of VX
-                    break;
-                case 0x18:
-                    soundTimer = V[currentInstruction.x]; // Set the sound timer to the value of VX
-                    break;
-                case 0x29:
-                    I = 0x50 + (V[currentInstruction.x] * 5); // Set I to the address of the font sprite for Vx
-                    break;
-                case 0x33:
-                    // Store BCD representation of Vx in memory at I, I+1, I+2
-                    memory[I] = V[currentInstruction.x] / 100; // Hundreds place
-                    memory[I + 1] = (V[currentInstruction.x] / 10) % 10; // Tens place
-                    memory[I + 2] = V[currentInstruction.x] % 10; // Ones place
-                    break;
-                case 0x55:
-                    // Store registers V0 to Vx in memory starting at address I
-                    for (int i = 0; i <= currentInstruction.x; ++i) 
-                    {
-                        memory[I + i] = V[i];
-                    }
-                    if (configuration::mode == 0)
-                        I += 1 + currentInstruction.x; // QUIRK - Increment I by the number of registers stored + 1 - Configure with chip mode
-                    break;
-                case 0x65:
-                    // Read registers V0 to Vx from memory starting at address I
-                    for (int i = 0; i <= currentInstruction.x; ++i)
-                    {
-                        V[i] = memory[I + i];
-                    }
-                    if (configuration::mode == 0)
-                        I += 1 + currentInstruction.x; // QUIRK - Increment I by the number of registers read + 1 - Configure with chip mode
-                    break;
-                default:
-                    std::cerr << "Unknown opcode: " << currentInstruction.opcode << std::endl;
-                        break;
-                }
-            break;
-        
-            if (configuration::mode == 1)
-            {
-                // Handle SCHIP-8 specific opcodes
-                switch ((currentInstruction.opcode >> 12) & 0xF) // Check the first nibble for SCHIP-8
-                {
-                    
-                }
-            }
-        
-        default:
-            //Handle unknown opcodes
-            std::cerr << "Unknown opcode: " << std::hex << currentInstruction.opcode << std::dec << std::endl;
-            break;
-    }
 }
-
 void Chip8::loadRom(const std::string &romPath)
 {
     std::ifstream romFile(romPath, std::ios::binary | std::ios::ate);
@@ -371,7 +118,7 @@ void Chip8::loadRom(const std::string &romPath)
     romFile.close();
 }
 
-inline void Chip8::updatec8display()
+void Chip8::updatec8display()
 {
     uint8_t cX = V[currentInstruction.x] % 64; // X coordinate - starting (wraps around with modulo)
     uint8_t cY = V[currentInstruction.y] % 32; // Y coordinate - starting (wraps around with modulo)
@@ -398,12 +145,27 @@ inline void Chip8::updatec8display()
 
 SDL_Texture *Chip8::getDisplayTexture() const
 {
-    SDL_Texture *texture = SDL_CreateTexture(SDL_MainComponents::renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STATIC, configuration::WINDOW_WIDTH, configuration::WINDOW_HEIGHT);
-    SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);
-    if (!texture) {
-        std::cerr << "Failed to create texture: " << SDL_GetError() << std::endl;
-        return nullptr;
+    SDL_Texture *texture = nullptr;
+    /*
+    if (configuration::mode == 1 || configuration::mode == 2) // High-resolution display for Super Chip-8
+    {
+        texture = SDL_CreateTexture(SDL_MainComponents::renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STATIC, configuration::WINDOW_WIDTH * 2, configuration::WINDOW_HEIGHT * 2);
+        SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);
+        uint32_t pixels[configuration::WINDOW_WIDTH * configuration::WINDOW_HEIGHT * 4];
+        for (int i = 0; i < configuration::WINDOW_WIDTH * configuration::WINDOW_HEIGHT * 4; i++)
+        {
+            pixels[i] = highResDisplay[i] ? 0xFFFFFFFF : 0x00000000; // White for on, black for off
+        }
+        SDL_UpdateTexture(texture, nullptr, pixels, configuration::WINDOW_WIDTH * sizeof(uint32_t));
     }
+    else //Regular Chip-8 display
+    {
+
+    }
+    */
+
+    texture = SDL_CreateTexture(SDL_MainComponents::renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STATIC, configuration::WINDOW_WIDTH, configuration::WINDOW_HEIGHT);
+    SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);
     uint32_t pixels[configuration::WINDOW_WIDTH * configuration::WINDOW_HEIGHT];
     for (int i = 0; i < configuration::WINDOW_WIDTH * configuration::WINDOW_HEIGHT; i++)
     {
@@ -411,4 +173,19 @@ SDL_Texture *Chip8::getDisplayTexture() const
     }
     SDL_UpdateTexture(texture, nullptr, pixels, configuration::WINDOW_WIDTH * sizeof(uint32_t));
     return texture;
+}
+
+Chip8::Chip8(const std::string &romPath)
+{
+    beeper = SDLBeep();
+    memset(display, 0, sizeof(display));
+    memset(memory, 0, sizeof(memory));
+    memset(V, 0, sizeof(V));
+    memset(keypad, 0, sizeof(keypad));
+    I = 0;
+    currentRom = romPath;
+    loadRom(romPath);
+    pc = 0x200; // Program starts at 0x200
+    // Load font into memory starting at 0x50
+    memcpy(memory + 0x50, font, sizeof(font));
 }

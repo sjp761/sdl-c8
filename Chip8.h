@@ -4,10 +4,8 @@
 #include <cstring>
 #include <vector>
 #include <SDL3/SDL_render.h>
-#include <atomic>
-#include <thread>
-#include <mutex>
 #include "SDLBeep.h"
+#include "Opcodes.h" 
 
 struct instruction_t
 {
@@ -36,7 +34,8 @@ class Chip8
 {
     public:
         uint8_t memory[4096]; // 4KB of memory
-        bool display[64 * 32 * 4]; // Chip8 has a 64x32 pixel monochrome display, bool because on or off, super chip has 128x64 (64*2 x 32*2 so * 4)
+        bool display[64 * 32];
+        //bool highResDisplay[128 * 64]; // High-resolution display for Super Chip-8
         std::vector<uint16_t> stack; // Chip8 stack using vector
         uint8_t V[16]; // 16 registers (V0 to VF)
         uint16_t I; // Index register
@@ -49,13 +48,13 @@ class Chip8
         void handleInput();
         void emulateInstruction();
         void loadRom(const std::string& romPath);
-        inline void updatec8display();
+        void updatec8display();
         SDL_Texture* getDisplayTexture() const;
         enum emulationState { RUNNING, PAUSED, STOPPED };
         emulationState state;
         SDLBeep beeper;
         instruction_t currentInstruction;
-
+        Chip8(const std::string& romPath);
         const uint8_t font[80] = 
         {
             0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
@@ -77,22 +76,31 @@ class Chip8
 
         };
 
+        void (*opcodeTable[16])(Chip8&) = {
+                &Opcodes::handle0,
+                &Opcodes::handle1,
+                &Opcodes::handle2,
+                &Opcodes::handle3,
+                &Opcodes::handle4,
+                &Opcodes::handle5,
+                &Opcodes::handle6,
+                &Opcodes::handle7,
+                &Opcodes::handle8,
+                &Opcodes::handle9,
+                &Opcodes::handleA,
+                &Opcodes::handleB,
+                &Opcodes::handleC,
+                &Opcodes::handleD,
+                &Opcodes::handleE,
+                &Opcodes::handleF
+        };
+
         
 
-        Chip8(const std::string& romPath) : state(RUNNING), currentRom(romPath)
-        {
-            beeper = SDLBeep();
-            memset(display, 0, sizeof(display));
-            memset(memory, 0, sizeof(memory));
-            memset(V, 0, sizeof(V));
-            memset(keypad, 0, sizeof(keypad));
-            I = 0;
-            currentRom = romPath;
-            loadRom(romPath);
-            pc = 0x200; // Program starts at 0x200
-            memcpy(memory + 0x50, font, sizeof(font)); // Load font into memory starting at 0x50
-        }
+        
 
 
 
 };
+
+

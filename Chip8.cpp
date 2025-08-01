@@ -168,17 +168,20 @@ void Chip8::emulateInstruction()
                 case 0x1:
                     // Set Vx to Vx OR Vy
                     V[currentInstruction.x] |= V[currentInstruction.y];
-                    V[0xF] = 0; // QUIRK
+                    if (configuration::vfReset)
+                        V[0xF] = 0; // QUIRK - configure with vfReset
                     break;
                 case 0x2:
                     // Set Vx to Vx AND Vy
                     V[currentInstruction.x] &= V[currentInstruction.y];
-                    V[0xF] = 0; // QUIRK
+                    if (configuration::vfReset)
+                        V[0xF] = 0; // QUIRK - configure with vfReset
                     break;
                 case 0x3:
                     // Set Vx to Vx XOR Vy
                     V[currentInstruction.x] ^= V[currentInstruction.y];
-                    V[0xF] = 0; // QUIRK
+                    if (configuration::vfReset)
+                        V[0xF] = 0; // QUIRK - configure with vfReset
                     break;
                 case 0x4:
                 {
@@ -198,7 +201,7 @@ void Chip8::emulateInstruction()
                 }
                 case 0x06:
                 {
-                    V[currentInstruction.x] = V[currentInstruction.y];
+                    V[currentInstruction.x] = V[currentInstruction.y]; //Quirk - configure with chip mode
                     int shiftedBit = V[currentInstruction.x] & 0x1; //Get the least significant bit
                     V[currentInstruction.x] >>= 1;
                     V[15] = shiftedBit; // Set VF to the least significant bit before shifting
@@ -213,7 +216,7 @@ void Chip8::emulateInstruction()
                 }
                 case 0xE:
                 {
-                    V[currentInstruction.x] = V[currentInstruction.y];
+                    V[currentInstruction.x] = V[currentInstruction.y]; //Quirk - configure with chip mode
                     int shiftedBit = (V[currentInstruction.x] & 0x80) >> 7; // Get the most significant bit before shifting
                     V[currentInstruction.x] <<= 1;
                     V[15] = shiftedBit; // Set VF to the most significant bit before shifting
@@ -237,7 +240,10 @@ void Chip8::emulateInstruction()
             break;
         case 0x0B:
             // Jump to address nnn + V0
-            pc = currentInstruction.nnn + V[0];
+            if (!configuration::jumping)
+                pc = currentInstruction.nnn + V[0]; // QUIRK - configure with Jumping - 0 if off, X if on
+            else
+                pc = currentInstruction.nnn + V[currentInstruction.x]; // QUIRK - configure with Jumping - 0 if off, X if on
             break;
         case 0x0C:
             V[currentInstruction.x] = (rand() % 256) & currentInstruction.nn; // Set Vx to a random number
@@ -314,7 +320,7 @@ void Chip8::emulateInstruction()
                     {
                         memory[I + i] = V[i];
                     }
-                    I += 1 + currentInstruction.x; // QUIRK - Increment I by the number of registers stored + 1
+                    I += 1 + currentInstruction.x; // QUIRK - Increment I by the number of registers stored + 1 - Configure with chip mode
                     break;
                 case 0x65:
                     // Read registers V0 to Vx from memory starting at address I
@@ -323,12 +329,12 @@ void Chip8::emulateInstruction()
                         V[i] = memory[I + i];
                     }
                     // Some interpreters increment I, some don't. Choose one for compatibility.
-                    I += 1 + currentInstruction.x; // QUIRK - Increment I by the number of registers read + 1
+                    I += 1 + currentInstruction.x; // QUIRK - Increment I by the number of registers read + 1 - Configure with chip mode
                     break;
                 default:
                     std::cerr << "Unknown opcode: " << currentInstruction.opcode << std::endl;
-                    break;
-            }
+                        break;
+                }
             break;
         
         default:
@@ -365,9 +371,9 @@ inline void Chip8::updatec8display()
         {
             bool pixel = (spriteRow & (0x80 >> j)) != 0; // Check if the pixel is set
             int x = (cX + j); // X coordinate of the pixel to be drawn
-            if (x >= 64 || x < 0) continue; // QUIRK - stop drawing if out of bounds
+            if ((x >= 64 || x < 0) && configuration::clipping) continue; // QUIRK - stop drawing if out of bounds - configure with Clipping
             int y = (cY + i); // Y coordinate of the pixel to be drawn
-            if (y >= 32 || y < 0) continue; // QUIRK - stop drawing if out of bounds
+            if ((y >= 32 || y < 0) && configuration::clipping) continue; // QUIRK - stop drawing if out of bounds - configure with Clipping
             int displayIndex = y * 64 + x;
             if (display[displayIndex] && pixel) // Collision detection - XOR operation
             {

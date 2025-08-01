@@ -12,11 +12,11 @@
 struct instruction_t
 {
     uint16_t opcode; // 2-byte opcode
-    uint8_t x; // First nibble of the opcode
-    uint8_t y; // Second nibble of the opcode
-    uint8_t n; // Third nibble of the opcode
+    uint8_t x; // Second nibble of the opcode
+    uint8_t y; // Third nibble of the opcode
+    uint8_t n; // Fourth nibble of the opcode
     uint8_t nn; // Last byte of the opcode
-    uint16_t nnn; // Last three bytes of the opcode
+    uint16_t nnn; // Last 3 nibbles of the opcode
 
 
     instruction_t()
@@ -36,7 +36,7 @@ class Chip8
 {
     public:
         uint8_t memory[4096]; // 4KB of memory
-        bool display[64 * 32]; // Chip8 has a 64x32 pixel monochrome display, bool because on or off
+        bool display[64 * 32 * 4]; // Chip8 has a 64x32 pixel monochrome display, bool because on or off, super chip has 128x64 (64*2 x 32*2 so * 4)
         std::vector<uint16_t> stack; // Chip8 stack using vector
         uint8_t V[16]; // 16 registers (V0 to VF)
         uint16_t I; // Index register

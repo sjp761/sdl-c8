@@ -201,7 +201,8 @@ void Chip8::emulateInstruction()
                 }
                 case 0x06:
                 {
-                    V[currentInstruction.x] = V[currentInstruction.y]; //Quirk - configure with chip mode
+                    if (configuration::mode == 0)
+                        V[currentInstruction.x] = V[currentInstruction.y]; //Quirk - configure with chip mode
                     int shiftedBit = V[currentInstruction.x] & 0x1; //Get the least significant bit
                     V[currentInstruction.x] >>= 1;
                     V[15] = shiftedBit; // Set VF to the least significant bit before shifting
@@ -216,7 +217,8 @@ void Chip8::emulateInstruction()
                 }
                 case 0xE:
                 {
-                    V[currentInstruction.x] = V[currentInstruction.y]; //Quirk - configure with chip mode
+                    if (configuration::mode == 0)
+                        V[currentInstruction.x] = V[currentInstruction.y]; //Quirk - configure with chip mode
                     int shiftedBit = (V[currentInstruction.x] & 0x80) >> 7; // Get the most significant bit before shifting
                     V[currentInstruction.x] <<= 1;
                     V[15] = shiftedBit; // Set VF to the most significant bit before shifting
@@ -320,7 +322,8 @@ void Chip8::emulateInstruction()
                     {
                         memory[I + i] = V[i];
                     }
-                    I += 1 + currentInstruction.x; // QUIRK - Increment I by the number of registers stored + 1 - Configure with chip mode
+                    if (configuration::mode == 0)
+                        I += 1 + currentInstruction.x; // QUIRK - Increment I by the number of registers stored + 1 - Configure with chip mode
                     break;
                 case 0x65:
                     // Read registers V0 to Vx from memory starting at address I
@@ -328,14 +331,23 @@ void Chip8::emulateInstruction()
                     {
                         V[i] = memory[I + i];
                     }
-                    // Some interpreters increment I, some don't. Choose one for compatibility.
-                    I += 1 + currentInstruction.x; // QUIRK - Increment I by the number of registers read + 1 - Configure with chip mode
+                    if (configuration::mode == 0)
+                        I += 1 + currentInstruction.x; // QUIRK - Increment I by the number of registers read + 1 - Configure with chip mode
                     break;
                 default:
                     std::cerr << "Unknown opcode: " << currentInstruction.opcode << std::endl;
                         break;
                 }
             break;
+        
+            if (configuration::mode == 1)
+            {
+                // Handle SCHIP-8 specific opcodes
+                switch ((currentInstruction.opcode >> 12) & 0xF) // Check the first nibble for SCHIP-8
+                {
+                    
+                }
+            }
         
         default:
             //Handle unknown opcodes

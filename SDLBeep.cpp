@@ -16,6 +16,7 @@ SDLBeep::SDLBeep()
     want.format = AUDIO_FORMAT;
     want.channels = CHANNELS;
     stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, &want, &audioCallback, this);
+    SDL_PauseAudioStreamDevice(stream);
 }
 
 void SDLBeep::audioCallback(void *userdata, SDL_AudioStream *stream, int additional_amount, int total_amount)

@@ -355,19 +355,21 @@ void Chip8::loadRom(const std::string &romPath)
 
 inline void Chip8::updatec8display()
 {
-    uint8_t cX = V[currentInstruction.x] % 64; // X coordinate
-    uint8_t cY = V[currentInstruction.y] % 32; // Y coordinate
+    uint8_t cX = V[currentInstruction.x] % 64; // X coordinate - starting (wraps around with modulo)
+    uint8_t cY = V[currentInstruction.y] % 32; // Y coordinate - starting (wraps around with modulo)
     V[0xF] = 0; // Clear VF register (collision flag)
-    for (int i = 0; i < currentInstruction.n; ++i)
+    for (int i = 0; i < currentInstruction.n; ++i) // Loop through each row of the sprite
     {
         uint8_t spriteRow = memory[I + i];
-        for (int j = 0; j < 8; ++j)
+        for (int j = 0; j < 8; ++j) // Loop through the column
         {
             bool pixel = (spriteRow & (0x80 >> j)) != 0; // Check if the pixel is set
-            int x = (cX + j) % 64;
-            int y = (cY + i) % 32;
+            int x = (cX + j); // X coordinate of the pixel to be drawn
+            if (x >= 64 || x < 0) continue; // QUIRK - stop drawing if out of bounds
+            int y = (cY + i); // Y coordinate of the pixel to be drawn
+            if (y >= 32 || y < 0) continue; // QUIRK - stop drawing if out of bounds
             int displayIndex = y * 64 + x;
-            if (display[displayIndex] && pixel) // Collision detection
+            if (display[displayIndex] && pixel) // Collision detection - XOR operation
             {
                 V[0xF] = 1; // Set VF to indicate collision
             }

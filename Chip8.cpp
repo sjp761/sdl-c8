@@ -120,58 +120,100 @@ void Chip8::loadRom(const std::string &romPath)
 
 void Chip8::updatec8display()
 {
-    uint8_t cX = V[currentInstruction.x] % 64; // X coordinate - starting (wraps around with modulo)
-    uint8_t cY = V[currentInstruction.y] % 32; // Y coordinate - starting (wraps around with modulo)
-    V[0xF] = 0; // Clear VF register (collision flag)
-    for (int i = 0; i < currentInstruction.n; ++i) // Loop through each row of the sprite
+    if (highResDisplay)
     {
-        uint8_t spriteRow = memory[I + i];
-        for (int j = 0; j < 8; ++j) // Loop through the column
+        int x = V[currentInstruction.x] & 0x7F; // Mask to 0-127
+        int y = V[currentInstruction.y] & 0x3F; // Mask to 0-63
+        V[0xF] = 0; // Clear collision flag
+
+        if (currentInstruction.n == 0) 
         {
-            bool pixel = (spriteRow & (0x80 >> j)) != 0; // Check if the pixel is set
-            int x = (cX + j); // X coordinate of the pixel to be drawn
-            if ((x >= 64 || x < 0) && configuration::clipping) continue; // QUIRK - stop drawing if out of bounds - configure with Clipping
-            int y = (cY + i); // Y coordinate of the pixel to be drawn
-            if ((y >= 32 || y < 0) && configuration::clipping) continue; // QUIRK - stop drawing if out of bounds - configure with Clipping
-            int displayIndex = y * 64 + x;
-            if (display[displayIndex] && pixel) // Collision detection - XOR operation
+            for (int row = 0; row < 16; row++) 
             {
-                V[0xF] = 1; // Set VF to indicate collision
+                uint8_t a1 = memory[I + row * 2];
+                uint8_t a2 = memory[I + row * 2 + 1];
+                uint16_t merged = (a1 << 8) | a2;
+                bool rowCollision = false;
+                for (int col = 0; col < 16; col++)
+                {
+                    int pixel = (merged >> (15 - col)) & 1;
+                    int displayX = (x + col) % 128; // wrap if needed
+                    int displayY = (y + row) % 64;  // wrap if needed
+                    if (display[displayX][displayY] && pixel) rowCollision = true;
+                    display[displayX][displayY] ^= pixel;
+                }
+                
+                if (rowCollision) V[0xF]++;
             }
-            display[displayIndex] ^= pixel; // XOR operation to draw the sprite
+        }
+        else
+        {
+            for (int row = 0; row < currentInstruction.n; row++) 
+            {
+                uint8_t byte = memory[I + row];
+                for (int col = 0; col < 8; col++) 
+                {
+                    int pixel = (byte >> (7 - col)) & 1;
+                    int displayX = (x + col) % 128;
+                    int displayY = (y + row) % 64;
+                    if (pixel && display[displayX][displayY]) V[0xF] = 1; // Set collision flag
+                    display[displayX][displayY] ^= pixel;
+                }
+            }
+        }
+    }
+    else
+    {
+        int x = V[currentInstruction.x] & 0x3F; // Mask to 0-63
+        int y = V[currentInstruction.y] & 0x1F; // Mask to 0-31
+        V[0xF] = 0; // Clear collision flag
+
+        for (int row = 0; row < currentInstruction.n; row++) 
+        {
+            uint8_t byte = memory[I + row];
+            for (int col = 0; col < 8; col++) 
+            {
+                int pixel = (byte >> (7 - col)) & 1;
+                int baseX = (x + col) % 64;
+                int baseY = (y + row) % 32;
+                
+                // Scale low-res pixel to 2x2 in high-res display
+                for (int dy = 0; dy < 2; dy++)
+                {
+                    for (int dx = 0; dx < 2; dx++)
+                    {
+                        int displayX = (baseX * 2 + dx) % 128;
+                        int displayY = (baseY * 2 + dy) % 64;
+                        
+                        // Toggle pixel
+                        if (pixel && display[displayX][displayY]) 
+                        {
+                            V[0xF] = 1; // Set collision flag if pixel was already on
+                        }
+                        display[displayX][displayY] ^= pixel;
+                    }
+                }
+            }
         }
     }
 }
 
 SDL_Texture *Chip8::getDisplayTexture() const
 {
-    SDL_Texture *texture = nullptr;
-    /*
-    if (configuration::mode == 1 || configuration::mode == 2) // High-resolution display for Super Chip-8
+    int width = 128;
+    int height = 64;
+    SDL_Texture *texture = SDL_CreateTexture(SDL_MainComponents::renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STATIC, width, height);
+    SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);           
+    uint32_t pixels[width * height];
+    for (int y = 0; y < height; y++)
     {
-        texture = SDL_CreateTexture(SDL_MainComponents::renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STATIC, configuration::WINDOW_WIDTH * 2, configuration::WINDOW_HEIGHT * 2);
-        SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);
-        uint32_t pixels[configuration::WINDOW_WIDTH * configuration::WINDOW_HEIGHT * 4];
-        for (int i = 0; i < configuration::WINDOW_WIDTH * configuration::WINDOW_HEIGHT * 4; i++)
+        for (int x = 0; x < width; x++)
         {
-            pixels[i] = highResDisplay[i] ? 0xFFFFFFFF : 0x00000000; // White for on, black for off
+            int i = y * width + x;
+            pixels[i] = display[x][y] ? 0xFFFFFFFF : 0x00000000; // White for on, black for off
         }
-        SDL_UpdateTexture(texture, nullptr, pixels, configuration::WINDOW_WIDTH * sizeof(uint32_t));
     }
-    else //Regular Chip-8 display
-    {
-
-    }
-    */
-
-    texture = SDL_CreateTexture(SDL_MainComponents::renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STATIC, configuration::WINDOW_WIDTH, configuration::WINDOW_HEIGHT);
-    SDL_SetTextureScaleMode(texture, SDL_SCALEMODE_NEAREST);
-    uint32_t pixels[configuration::WINDOW_WIDTH * configuration::WINDOW_HEIGHT];
-    for (int i = 0; i < configuration::WINDOW_WIDTH * configuration::WINDOW_HEIGHT; i++)
-    {
-        pixels[i] = display[i] ? 0xFFFFFFFF : 0x00000000; // White for on, black for off
-    }
-    SDL_UpdateTexture(texture, nullptr, pixels, configuration::WINDOW_WIDTH * sizeof(uint32_t));
+    SDL_UpdateTexture(texture, nullptr, pixels, width * sizeof(uint32_t));
     return texture;
 }
 
@@ -184,8 +226,10 @@ Chip8::Chip8(const std::string &romPath)
     memset(keypad, 0, sizeof(keypad));
     I = 0;
     currentRom = romPath;
+    highResDisplay = false;
     loadRom(romPath);
     pc = 0x200; // Program starts at 0x200
     // Load font into memory starting at 0x50
     memcpy(memory + 0x50, font, sizeof(font));
+    memcpy(memory + 0x50 + sizeof(font), superFont, sizeof(superFont)); // Load Super Chip-8 font
 }

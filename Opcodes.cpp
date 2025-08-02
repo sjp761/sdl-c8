@@ -23,6 +23,17 @@ void Opcodes::handle0(Chip8 &chip8)
                 // Optionally, set state = STOPPED or handle as needed
             }
             break;
+        case 0x00FD: // Quit the emulator
+            chip8.state = Chip8::STOPPED; // Set state to STOPPED
+            break;
+        case 0x00FE: // High-resolution display mode
+            chip8.highResDisplay = true; // Set high-resolution display mode
+            break;
+        case 0x00FF: // Regular display mode
+            chip8.highResDisplay = false; // Set regular display mode
+            break;
+        default:
+            std::cerr << "Unknown opcode: " << chip8.currentInstruction.opcode << std::endl;
     }
 }
 

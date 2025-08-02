@@ -8,7 +8,7 @@ SDL_SmartPointer<SDL_Texture> SDL_MainComponents::display;
 void SDL_MainComponents::renderUpdate()
 {
     SDL_RenderClear(renderer);
-    SDL_RenderTexture(renderer, display.get(), nullptr, nullptr);
+    SDL_RenderTexture(renderer, display.get(), NULL, NULL);
     SDL_RenderPresent(renderer);
 }
 

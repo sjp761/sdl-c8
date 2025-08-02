@@ -137,9 +137,10 @@ void Chip8::updatec8display()
                 for (int col = 0; col < 16; col++)
                 {
                     int pixel = (merged >> (15 - col)) & 1;
-                    if (pixel == 0) continue; // Skip if pixel is off
-                    int displayX = (x + col) % 128; // wrap if needed
-                    int displayY = (y + row) % 64;  // wrap if needed
+                    int displayX = (x + col); // wrap if needed
+                    int displayY = (y + row);  // wrap if needed
+                    if (pixel == 0 || displayX >= 128 || displayY >= 64) continue; // Skip if pixel is off or values are out of bounds
+
                     if (display[displayX][displayY] && pixel) rowCollision = true;
                     display[displayX][displayY] ^= pixel;
                 }
@@ -156,9 +157,9 @@ void Chip8::updatec8display()
                 for (int col = 0; col < 8; col++) 
                 {
                     int pixel = (byte >> (7 - col)) & 1;
-                    if (pixel == 0) continue; // Skip if pixel is off
-                    int displayX = (x + col) % 128;
-                    int displayY = (y + row) % 64;
+                    int displayX = (x + col);
+                    int displayY = (y + row);
+                    if (pixel == 0 || displayX >= 128 || displayY >= 64) continue; // Skip if pixel is off or values are out of bounds
                     if (pixel && display[displayX][displayY]) rowCollision = true; // Set collision flag
                     display[displayX][displayY] ^= pixel;
                 }
@@ -191,9 +192,9 @@ void Chip8::updatec8display()
                         int displayY = (baseY * 2 + dy) % 64;
                         
                         // Toggle pixel
-                        if (pixel && display[displayX][displayY]) 
+                        if (pixel && display[displayX][displayY] && dy == 0) 
                         {
-                            V[0xF] = 1; // Set collision flag if pixel was already on
+                            V[0xF] = 1; // Set collision flag if pixel was already on in the top row
                         }
                         display[displayX][displayY] ^= pixel;
                     }

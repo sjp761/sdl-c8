@@ -18,7 +18,7 @@ int main(int argc, char* argv[])
     std::string romPath;
     if (argc < 2) {
         std::cerr << "Rom path empty: " << std::endl;
-        romPath = "/home/user/Documents/sdl-c8/roms/flags.ch8";
+        romPath = "/home/user/Documents/sdl-c8/roms/quirks.ch8";
     }
     else {
         romPath = std::string(argv[1]);

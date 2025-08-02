@@ -56,6 +56,15 @@ class Chip8
         SDLBeep beeper;
         instruction_t currentInstruction;
         Chip8(const std::string& romPath);
+
+        // Shortcut method headers for instruction_t struct
+        constexpr uint16_t opcode() { return currentInstruction.opcode; }
+        constexpr uint8_t x() { return currentInstruction.x; }
+        constexpr uint8_t y() { return currentInstruction.y; }
+        constexpr uint8_t n() { return currentInstruction.n; }
+        constexpr uint8_t nn() { return currentInstruction.nn; }
+        constexpr uint16_t nnn() { return currentInstruction.nnn; }
+
         const uint8_t font[80] = 
         {
             0xF0, 0x90, 0x90, 0x90, 0xF0, // 0

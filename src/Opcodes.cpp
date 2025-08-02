@@ -26,10 +26,10 @@ void Opcodes::handle0(Chip8 &chip8)
         case 0x00FD: // Quit the emulator
             chip8.state = Chip8::STOPPED; // Set state to STOPPED
             break;
-        case 0x00FE: // High-resolution display mode
+        case 0x00FF: // High-resolution display mode
             chip8.highResDisplay = true; // Set high-resolution display mode
             break;
-        case 0x00FF: // Regular display mode
+        case 0x00FE: // Regular display mode
             chip8.highResDisplay = false; // Set regular display mode
             break;
         default:

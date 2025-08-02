@@ -137,6 +137,7 @@ void Chip8::updatec8display()
                 for (int col = 0; col < 16; col++)
                 {
                     int pixel = (merged >> (15 - col)) & 1;
+                    if (pixel == 0) continue; // Skip if pixel is off
                     int displayX = (x + col) % 128; // wrap if needed
                     int displayY = (y + row) % 64;  // wrap if needed
                     if (display[displayX][displayY] && pixel) rowCollision = true;
@@ -151,14 +152,17 @@ void Chip8::updatec8display()
             for (int row = 0; row < currentInstruction.n; row++) 
             {
                 uint8_t byte = memory[I + row];
+                bool rowCollision = false;
                 for (int col = 0; col < 8; col++) 
                 {
                     int pixel = (byte >> (7 - col)) & 1;
+                    if (pixel == 0) continue; // Skip if pixel is off
                     int displayX = (x + col) % 128;
                     int displayY = (y + row) % 64;
-                    if (pixel && display[displayX][displayY]) V[0xF] = 1; // Set collision flag
+                    if (pixel && display[displayX][displayY]) rowCollision = true; // Set collision flag
                     display[displayX][displayY] ^= pixel;
                 }
+                if (rowCollision) V[0xF]++; // Increment collision flag if any pixel was toggled off
             }
         }
     }

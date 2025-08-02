@@ -10,7 +10,6 @@ SDL_Renderer* SDL_MainComponents::renderer = nullptr;
 
 int main(int argc, char* argv[])
 {
-    std::cout << std::filesystem::current_path() << std::endl;
     srand(static_cast<unsigned int>(time(0)));
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) == false) {
         std::cerr << "SDL_Init Error: " << SDL_GetError() << std::endl;
@@ -19,7 +18,7 @@ int main(int argc, char* argv[])
     std::string romPath;
     if (argc < 2) {
         std::cerr << "Rom path empty: " << std::endl;
-        romPath = "/home/user/Documents/sdl-c8/roms/scrolling.ch8";
+        romPath = "/Users/user/Documents/sdl-c8/roms/scrolling.ch8";
     }
     else {
         romPath = std::string(argv[1]);

@@ -178,9 +178,10 @@ void Chip8::updatec8display()
             for (int col = 0; col < 8; col++) 
             {
                 int pixel = (byte >> (7 - col)) & 1;
-                int baseX = (x + col) % 64;
-                int baseY = (y + row) % 32;
-                
+                int baseX = (x + col);
+                int baseY = (y + row);
+                if (baseX >= 64 || baseX < 0) continue;
+                if (baseY >= 32 || baseY < 0) continue;
                 // Scale low-res pixel to 2x2 in high-res display
                 for (int dy = 0; dy < 2; dy++)
                 {

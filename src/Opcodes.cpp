@@ -205,17 +205,35 @@ void Opcodes::handleF(Chip8 &chip8)
     {
         case 0x0A:
         {
-            bool keyPressed = false;
-            for (int i = 0; i < 16; ++i)
+            if (!chip8.waitingForKeyRelease) 
             {
-                if (chip8.keypad[i]) {
-                    chip8.V[chip8.x()] = i; // Set Vx to the key pressed
-                    keyPressed = true;
-                    break;
+                for (int i = 0; i < 16; ++i) 
+                {
+                    if (chip8.keypad[i]) 
+                    {
+                        chip8.lastkeyPressed = i;
+                        chip8.waitingForKeyRelease = true;
+                        chip8.pc -= 2; // Wait for release
+                        return;
+                    }
                 }
-            }
-            if (!keyPressed) {
-                chip8.pc -= 2; // Repeat this instruction until a key is pressed
+                chip8.pc -= 2; // No key pressed, keep waiting
+                return;
+            } 
+            else 
+            {
+                // Wait for the key to be released
+                if (!chip8.keypad[chip8.lastkeyPressed]) {
+                    chip8.V[chip8.x()] = chip8.lastkeyPressed;
+                    chip8.waitingForKeyRelease = false;
+                    chip8.lastkeyPressed = -1;
+                    // Continue execution
+                } 
+                else 
+                {
+                    chip8.pc -= 2; // Still waiting for release
+                    return;
+                }
             }
             break;
         }

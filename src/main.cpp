@@ -18,7 +18,7 @@ int main(int argc, char* argv[])
     std::string romPath;
     if (argc < 2) {
         std::cerr << "Rom path empty: " << std::endl;
-        romPath = "/home/user/Documents/sdl-c8/roms/quirks.ch8";
+        romPath = "/home/user/Documents/sdl-c8/roms/keypad.ch8";
     }
     else {
         romPath = std::string(argv[1]);
@@ -28,8 +28,8 @@ int main(int argc, char* argv[])
     SDL_ShowWindow(SDL_MainComponents::window);
     while (c8machine.state != Chip8::STOPPED)
     {
-        c8machine.handleInput();
         uint64_t startTime = SDL_GetPerformanceCounter();
+        c8machine.handleInput();
         for (int i = 0; i < 700/60; ++i) 
         {
         c8machine.emulateInstruction();

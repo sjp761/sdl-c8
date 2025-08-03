@@ -56,6 +56,8 @@ class Chip8
         SDLBeep beeper;
         instruction_t currentInstruction;
         Chip8(const std::string& romPath);
+        bool waitingForKeyRelease = false;
+        int lastkeyPressed = -1;
 
         // Shortcut method headers for instruction_t struct
         constexpr uint16_t opcode() { return currentInstruction.opcode; }
